@@ -6,6 +6,8 @@ import java.util.*;
 
 /**
  * Created by yangboz on 1/11/16.
+ *
+ * @author smartkit@msn.com
  */
 public class ConferenceTrackManagement {
 
