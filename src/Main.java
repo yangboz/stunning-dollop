@@ -1,67 +1,86 @@
-import simpleGa.Algorithm;
-import simpleGa.FitnessCalc;
-import simpleGa.Population;
+import com.sun.tools.javac.util.Assert;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class Main {
 
-    public static void main(String[] args) {
+//    public static void main(String[] args) {
+//
+//        // Set a candidate solution
+////        FitnessCalc.setSolution("1111000000000000000000000000000000000000000000000000000000001111");
+//        FitnessCalc.setSolution("11111111111100001111111111111111");
+//
+//        // Create an initial population
+//        Population myPop = new Population(50, true);
+//
+//        // Evolve our population until we reach an optimum solution
+//        int generationCount = 0;
+//        while (myPop.getFittest().getFitness() < FitnessCalc.getMaxFitness()) {
+//            generationCount++;
+//            System.out.println("Generation: " + generationCount + " Fittest: " + myPop.getFittest().getFitness());
+//            myPop = Algorithm.evolvePopulation(myPop);
+//        }
+//        System.out.println("Solution found!");
+//        System.out.println("Generation: " + generationCount);
+//        System.out.println("Genes:");
+//        System.out.println(myPop.getFittest());
+//
+//    }
 
-        // Set a candidate solution
-        FitnessCalc.setSolution("1111000000000000000000000000000000000000000000000000000000001111");
+    public static void main(String[] args) throws ParseException {
+        System.out.println("Hello Conference Trace Management!");
+        //Now starting confer tracker management inspired by Genetic Algorithm.
+        //1.Initialization
+        ConfTracker confTracker = new ConfTracker();
+        confTracker.initialize();
+        Assert.checkNonNull(confTracker.getAllTalks());
 
-        // Create an initial population
-        Population myPop = new Population(50, true);
-
-        // Evolve our population until we reach an optimum solution
-        int generationCount = 0;
-        while (myPop.getFittest().getFitness() < FitnessCalc.getMaxFitness()) {
-            generationCount++;
-            System.out.println("Generation: " + generationCount + " Fittest: " + myPop.getFittest().getFitness());
-            myPop = Algorithm.evolvePopulation(myPop);
-        }
-        System.out.println("Solution found!");
-        System.out.println("Generation: " + generationCount);
-        System.out.println("Genes:");
-        System.out.println(myPop.getFittest());
-
+        //2.Evaluation
+        //3.Selection
+        //4.Repeat
+        Session morningSession = new Session(9, 12, Session.FLAG_MORNING);
+        Session afternoonSession = new Session(13, 17, Session.FLAG_AFTERNOON);
+        ///
+        confTracker.evaluation(morningSession);
+        confTracker.selection();
+        confTracker.output();
+        ///
+        confTracker.evaluation(afternoonSession);
+        confTracker.selection();
+        confTracker.output();
     }
 
-//    public static void main(String[] args) {
-//        System.out.println("Hello Conference Trace Management!");
-//        //Now starting confer tracker management.
-//        //1.Initialization
-//        ConfTracker confTracker = new ConfTracker();
-//        confTracker.initialize();
-//        Assert.checkNonNull(confTracker.getAllTalks());
-//        //2.Evaluation
-//        Session morningSession = new Session(9, 12);
-//        Session afternoonSession = new Session(11, 17);
-//        List<Session> daySessions = new ArrayList<Session>();
-//        daySessions.add(morningSession);
-//        daySessions.add(afternoonSession);
-//        confTracker.evaluation(daySessions);
-//        //3.Selection
-//        confTracker.selection(confTracker.getAllTalks());
-//        //4.CrossOver
-//        //5.Mutation
-//        //6.Repeat
-//        confTracker.output();
-//    }
+    private static Date addMinutesToDate(int minutes, Date beforeTime) {
+        final long ONE_MINUTE_IN_MILLIS = 60000;//milli-secs
 
-//    interface Comparable<T> {
-//        public int compareTo(T o);
-//    }
+        long curTimeInMs = beforeTime.getTime();
+        Date afterAddingMins = new Date(curTimeInMs + (minutes * ONE_MINUTE_IN_MILLIS));
+        return afterAddingMins;
+    }
 
-    static class ConfTracker {
+    //Iterator design pattern
+    public interface Iterator {
+        public boolean hasNext();
 
+        public Object next();
+    }
+
+    //
+    public interface IteratorContainer {
+        public Iterator getIterator();
+    }
+
+    static class ConfTracker implements IteratorContainer {
+
+        Talker firstTalker = null;
         private List<Talker> allTalks = new ArrayList<Talker>();
-
-        private Talker currentTalker = null;
+        private int remainMinutes = 0;
+        private Session currentSession = null;
+        private Date currentTalkerTime = null;
+        private Talker lastTalker = new Talker("Networking Event", 999);//always the last.
+        private Talker previousTalker = null;
 
         //Test input
         public void initialize() {
@@ -86,48 +105,128 @@ public class Main {
             allTalks.add(new Talker("User Interface CSS in Rails Apps 60min", 60));
         }
 
-        public void evaluation(List<Session> sessions) {
+        public void evaluation(Session session) {
+            this.currentSession = session;
+            this.remainMinutes = session.getDuration();
+            System.out.println("RemainMinutes:" + this.remainMinutes + "mins");
 //            ascendingTalkers
-            Collections.sort(this.allTalks, new Comparator<Talker>() {
-                public int compare(Talker o1, Talker o2) {
-                    if (o1.duration == o2.duration)
-                        return 0;
-                    return o1.duration < o2.duration ? -1 : 1;
-                }
-            });
-            //
+//            Collections.sort(this.allTalks, new Comparator<Talker>() {
+//                public int compare(Talker o1, Talker o2) {
+//                    if (o1.duration == o2.duration)
+//                        return 0;
+//                    return o1.duration < o2.duration ? -1 : 1;
+//                }
+//            });
         }
 
-        //RandomSelection
-        public Talker selection(List<Talker> talkers) {
-            int randomId = (int) (Math.random() * talkers.size());
-            Talker selector = talkers.remove(randomId);
-            return selector;
+        //randomly select the first item.
+        public void selection() throws ParseException {
+            //Randomize
+            long seed = System.nanoTime();
+            Collections.shuffle(this.allTalks, new Random(seed));
+            //begin selection.
+            this.firstTalker = this.previousTalker = this.allTalks.remove(0);
+            this.remainMinutes -= this.firstTalker.getDuration();
+            this.currentTalkerTime = addMinutesToDate(0, this.currentSession.getBeginTime());
         }
 
         //Test output
-        public String output() {
-            return "" + currentTalker.toString();
+        public void output() throws ParseException {
+            //
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+            System.out.println(sdf.format(this.currentTalkerTime) + this.currentSession + " " + this.firstTalker.toString());
+            for (Iterator iterator = this.getIterator(); iterator.hasNext(); ) {
+                Talker talker = (Talker) iterator.next();
+                this.currentTalkerTime = addMinutesToDate(this.previousTalker.getDuration(), this.currentTalkerTime);
+                System.out.println(sdf.format(this.currentTalkerTime) + this.currentSession + " " + talker.toString());
+                this.previousTalker = talker;
+            }
+            //hard-code output the last talker
+            if (currentSession.isAfternoon()) {
+                this.currentTalkerTime = addMinutesToDate(0, this.currentSession.getEndTime());
+                System.out.println(sdf.format(this.currentTalkerTime) + this.currentSession + " " + this.lastTalker.toString());
+            }
         }
 
         public List<Talker> getAllTalks() {
             return allTalks;
         }
+
+        @Override
+        public Iterator getIterator() {
+            return new TalkIterator();
+        }
+
+        private class TalkIterator implements Iterator {
+            int index;
+
+            @Override
+            public boolean hasNext() {
+                if (index < allTalks.size()) {
+//                    return true;
+                    return indexOfByDuration(allTalks, remainMinutes) != -1;
+                }
+                return false;
+            }
+
+            @Override
+            public Object next() {
+                if (this.hasNext()) {
+                    index = indexOfByDuration(allTalks, remainMinutes);
+                    remainMinutes -= allTalks.get(index).getDuration();
+                    return allTalks.remove(index);
+                }
+                return null;
+            }
+
+            //indexOf with duration constrained.
+            //TODO:select the best suitable index.
+            int indexOfByDuration(List<Talker> list, int leftDuration) {
+                int i = 0;
+                for (Talker o : list) {
+                    if (o.getDuration() <= leftDuration) return i;
+                    i++;
+                }
+                return -1;
+            }
+        }
     }
 
     static class Session {
 
-        private long duration = 0;
-        private long begin = 0;
-        private long end = 0;
+        public static final String FLAG_MORNING = "AM";
+        public static final String FLAG_AFTERNOON = "PM";
+        private SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+        private int begin = 0;
+        private int end = 0;
+        private String flag = "";
 
-        public Session(long begin, long end) {
+        public Session(int begin, int end, String flag) {
             this.begin = begin;
             this.end = end;
+            this.flag = flag;
         }
 
-        public long getDuration() {
-            return this.end - this.begin;
+        public int getDuration() {
+            return (this.end - this.begin) * 60;//hour to minutes.
+        }
+
+        public boolean isAfternoon() {
+            return flag == FLAG_AFTERNOON;
+        }
+
+        public Date getBeginTime() throws ParseException {
+            Date beginDate = format.parse(String.valueOf(Integer.toString(this.begin) + ":00"));
+            return beginDate;
+        }
+
+        public Date getEndTime() throws ParseException {
+            Date beginDate = format.parse(String.valueOf(Integer.toString(this.end) + ":00"));
+            return beginDate;
+        }
+
+        public String toString() {
+            return flag;
         }
     }
 
@@ -141,20 +240,8 @@ public class Main {
             this.duration = duration;
         }
 
-        public String getTitle() {
-            return title;
-        }
-
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
         public int getDuration() {
             return duration;
-        }
-
-        public void setDuration(int duration) {
-            this.duration = duration;
         }
 
         public String toString() {
@@ -162,4 +249,5 @@ public class Main {
         }
 
     }
+
 }
