@@ -90,10 +90,14 @@ public class ConferenceTrackManagement {
             //Simply randomize it.
             for (int i = 0; i < this.defaultTalkers.size(); i++) {//XXX:should permutation all of array list items?
                 long seed = System.nanoTime();
+//                System.out.println("before shuffle:" + this.defaultTalkers.toString());
                 Collections.shuffle(this.defaultTalkers, new Random(seed));
-                //
-                populatedTalkerLists.add(this.defaultTalkers);
+//                System.out.println("after shuffle:" + this.defaultTalkers.toString());
+                //shuffle then clone it.
+                List<Talker> shuffledTalkers = new ArrayList<Talker>(this.defaultTalkers);
+                populatedTalkerLists.add(shuffledTalkers);
             }
+//            System.out.println("after population:" + populatedTalkerLists.toString());
         }
 
         public void calculateConferTrackers() throws ParseException {
@@ -105,6 +109,7 @@ public class ConferenceTrackManagement {
             //4.Repeat
             int trackerIndex = 1;
             for (List<Talker> talkerList : populatedTalkerLists) {
+//                System.out.println("Input talkerList:" + talkerList.toString());
                 //Morning
                 confTracker.evaluation(morningSession);
                 confTracker.selection(talkerList);
@@ -134,7 +139,7 @@ public class ConferenceTrackManagement {
         private Talker lastTalker = new Talker("Networking Event", 999);//always the last.
         private Talker previousTalker = null;
 
-
+        //XXX:Evaluation the session related time value.
         public void evaluation(Session session) {
             this.currentSession = session;
             this.remainMinutes = session.getDuration();
@@ -151,8 +156,8 @@ public class ConferenceTrackManagement {
 
         //randomly select the first item.
         public void selection(List<Talker> talkers) throws ParseException {
-            //accept input
-            this.inputTalks = talkers;
+            //accept input but clone it.
+            this.inputTalks = new ArrayList<Talker>(talkers);
             //begin selection except lunch session.
             if (!currentSession.isLunch()) {
                 this.firstTalker = this.previousTalker = this.inputTalks.remove(0);
